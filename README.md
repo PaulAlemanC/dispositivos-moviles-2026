@@ -157,3 +157,10 @@ El registro devuelve `201` con id, nombre, correo y rol. Un correo duplicado dev
 Las pruebas HTTP de `AuthEndpointTests` ejercitan los controllers, services, repositories
 y el middleware JWT con una base InMemory aislada y una clave sintética exclusiva de pruebas.
 Incluyen también validación de Swagger. La aplicación normal sigue usando SQL Server.
+
+## Ejercicio 14: React y AuthContext
+
+Investigación de `useCallback`, `useMemo`, `createContext` y cleanup en hooks, con un ejemplo
+demostrativo de `AuthContext` para React Native. No está integrado a una app (el repositorio
+aún no tiene una). Ver [docs/ejercicio14/Ejercicio14.md](docs/ejercicio14/Ejercicio14.md) y
+[el resumen para escribir a mano](docs/ejercicio14/Ejercicio14_ResumenManuscrito.md).

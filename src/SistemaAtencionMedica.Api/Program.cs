@@ -7,11 +7,49 @@ using Microsoft.IdentityModel.Tokens;
 using SistemaAtencionMedica.Api.Models;
 using Microsoft.OpenApi.Models;
 using SistemaAtencionMedica.Api.Data;
+using SistemaAtencionMedica.Api.Helpers.Security;
 using SistemaAtencionMedica.Api.Middleware;
 using SistemaAtencionMedica.Api.Repositories;
 using SistemaAtencionMedica.Api.Services;
 
+if (args.Contains("--genkey"))
+{
+    Console.WriteLine(SecretProtector.GenerateKey());
+    return;
+}
+
 var builder = WebApplication.CreateBuilder(args);
+
+var secretProtector = new SecretProtector(builder.Configuration["Secrets:MasterKey"]);
+
+var cliIndex = Array.FindIndex(args, a => a is "--encrypt" or "--decrypt");
+if (cliIndex >= 0)
+{
+    if (cliIndex + 1 >= args.Length)
+    {
+        Console.Error.WriteLine($"Uso: {args[cliIndex]} <valor>");
+        return;
+    }
+
+    var cliValue = args[cliIndex + 1];
+    Console.WriteLine(args[cliIndex] == "--encrypt"
+        ? secretProtector.Encrypt(cliValue)
+        : secretProtector.Decrypt(cliValue));
+    return;
+}
+
+builder.Configuration.DecryptProtectedValues(secretProtector);
+builder.Services.AddSingleton<ISecretProtector>(secretProtector);
+
+#if DEBUG
+if (builder.Configuration.GetValue<bool>("Secrets:PrintEncryptedSnapshot"))
+{
+    builder.Configuration.PrintEncryptedSnapshot(
+        builder.Environment,
+        secretProtector,
+        builder.Configuration.GetSection("Secrets:ProtectedPaths").Get<string[]>() ?? []);
+}
+#endif
 
 builder.Services.AddControllers();
 builder.Services.AddProblemDetails();
@@ -43,6 +81,7 @@ builder.Services.AddScoped<IPacienteRepository, PacienteRepository>();
 builder.Services.AddScoped<IMedicoRepository, MedicoRepository>();
 builder.Services.AddScoped<IPacienteService, PacienteService>();
 builder.Services.AddScoped<IMedicoService, MedicoService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IPasswordHasher<Usuario>, PasswordHasher<Usuario>>();

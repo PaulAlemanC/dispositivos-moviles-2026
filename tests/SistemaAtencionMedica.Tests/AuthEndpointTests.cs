@@ -115,6 +115,12 @@ public class AuthEndpointTests : IClassFixture<AuthApiFactory>
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", login.Token);
         Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/api/pacientes")).StatusCode);
         Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/api/medicos")).StatusCode);
+        var dashboardResponse = await client.GetAsync("/api/dashboard/summary");
+        Assert.Equal(HttpStatusCode.OK, dashboardResponse.StatusCode);
+        var dashboard = await dashboardResponse.Content.ReadFromJsonAsync<DashboardSummaryResponseDto>();
+        Assert.NotNull(dashboard);
+        Assert.NotEmpty(dashboard.ProximasCitas);
+        Assert.Contains(dashboard.Alertas, a => a.Mensaje.Contains("Recordatorio: Verificar stock de insumos básicos del consultorio"));
 
         var wrong = await client.PostAsJsonAsync("/api/auth/login", new { correo, password = "Incorrecta!" });
         Assert.Equal(HttpStatusCode.Unauthorized, wrong.StatusCode);
@@ -129,6 +135,7 @@ public class AuthEndpointTests : IClassFixture<AuthApiFactory>
     [Theory]
     [InlineData("/api/pacientes")]
     [InlineData("/api/medicos")]
+    [InlineData("/api/dashboard/summary")]
     public async Task ProtectedEndpoints_WithoutToken_Return401(string path)
     {
         using var client = Client();
